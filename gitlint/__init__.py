@@ -22,19 +22,20 @@ It supports many filetypes, including:
     among others. See https://github.com/sk-/git-lint for the complete list.
 
 Usage:
-    git-lint [-f | --force] [--json] [--last-commit] [FILENAME ...]
-    git-lint [-t | --tracked] [-f | --force] [--json] [--last-commit]
+    git-lint [--config=<file>] [-f | --force] [--json] [--last-commit] [FILENAME ...]
+    git-lint [--config=<file>] [-t | --tracked] [-f | --force] [--json] [--last-commit]
     git-lint -h | --version
 
 Options:
-    -h             Show the usage patterns.
-    --version      Prints the version number.
-    -f --force     Shows all the lines with problems.
-    -t --tracked   Lints only tracked files.
-    --json         Prints the result as a json string. Useful to use it in
-                   conjunction with other tools.
-    --last-commit  Checks the last checked-out commit. This is mostly useful
-                   when used as: git checkout <revid>; git lint --last-commit.
+    -h               Show the usage patterns.
+    --version        Prints the version number.
+    -f --force       Shows all the lines with problems.
+    -t --tracked     Lints only tracked files.
+    --json           Prints the result as a json string. Useful to use it in
+                     conjunction with other tools.
+    --last-commit    Checks the last checked-out commit. This is mostly useful
+                     when used as: git checkout <revid>; git lint --last-commit.
+    --config=<file>  Specifies an alternate YAML configuration file
 """
 
 from __future__ import unicode_literals
@@ -87,11 +88,13 @@ def find_invalid_filenames(filenames, repository_root):
     return errors
 
 
-def get_config(repo_root):
-    """Gets the configuration file either from the repository or the default."""
+def get_config(repo_root, custom_config = None):
+    """Gets the configuration file either from the repository, default, or from --config argument."""
     config = os.path.join(os.path.dirname(__file__), 'configs', 'config.yaml')
 
-    if repo_root:
+    if custom_config:
+        config = custom_config
+    elif repo_root:
         repo_config = os.path.join(repo_root, '.gitlint.yaml')
         if os.path.exists(repo_config):
             config = repo_config
@@ -237,7 +240,7 @@ def main(argv, stdout=sys.stdout, stderr=sys.stderr):
 
     linter_not_found = False
     files_with_problems = 0
-    gitlint_config = get_config(repository_root)
+    gitlint_config = get_config(repository_root, arguments.get("--config", None))
     json_result = {}
 
     with futures.ThreadPoolExecutor(max_workers=multiprocessing.cpu_count())\
